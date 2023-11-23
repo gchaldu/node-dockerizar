@@ -5,6 +5,23 @@ on:
     branches: [ master ]
 
 jobs:
+  create-docker-image:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v2
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.TOKEN_CD }}
+
+      - name: Build image
+        run: |
+          docker build . --tag ghcr.io/gchaldu/node-api-v1:latest
+          docker push ghcr.io/gchaldu/node-api-v1:latest
   test:
     runs-on: ubuntu-latest
     strategy:
@@ -29,8 +46,8 @@ jobs:
         if:  steps.counter.outputs.things != '0'
         run: exit 1
   deploy:
+    needs: create-docker-image
     runs-on: ubuntu-latest
-    needs: [test]
     steps:
       - uses: actions/checkout@v2 
       - name: Deploy in EC2
